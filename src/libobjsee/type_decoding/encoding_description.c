@@ -63,7 +63,7 @@ static char *parse_identifier(struct_parser_t *parser) {
     return identifier;
 }
 
-static void parse_struct_members(struct_parser_t *parser) {
+static bool parse_struct_members(struct_parser_t *parser) {
     bool first = true;
     while (peek_char(parser) && peek_char(parser) != '}') {
         if (!first) {
@@ -90,6 +90,7 @@ static void parse_struct_members(struct_parser_t *parser) {
         
         first = false;
     }
+    return first;
 }
 
 static void parse_type(struct_parser_t *parser) {
@@ -121,8 +122,8 @@ static void parse_type(struct_parser_t *parser) {
             
             if (peek_char(parser) == '=') {
                 consume_char(parser);
-                parse_struct_members(parser);
-                append_to_output(parser, "}");
+                bool is_empty = parse_struct_members(parser);
+                append_to_output(parser, is_empty ? "}" : " }");
             }
         }
         else {
@@ -133,8 +134,8 @@ static void parse_type(struct_parser_t *parser) {
                 if (peek_char(parser) == '=') {
                     consume_char(parser);
                     append_to_output(parser, " { ");
-                    parse_struct_members(parser);
-                    append_to_output(parser, "}");
+                    bool is_empty = parse_struct_members(parser);
+                    append_to_output(parser, is_empty ? "}" : " }");
                 }
             }
         }

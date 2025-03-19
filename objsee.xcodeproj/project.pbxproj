@@ -130,7 +130,7 @@
 		5FF45C072D333F8B0073F42E /* trace_server.h in Headers */ = {isa = PBXBuildFile; fileRef = 5FF45BFB2D333F8B0073F42E /* trace_server.h */; };
 		5FF45C0B2D333F980073F42E /* StructDecoderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 5FF45C092D333F980073F42E /* StructDecoderTests.m */; };
 		5FF58D852D05B84A007F5000 /* msgSend_hook.c in Sources */ = {isa = PBXBuildFile; fileRef = 5FCA29AE2CFC496900D7BB08 /* msgSend_hook.c */; settings = {COMPILER_FLAGS = "-fno-objc-arc -O2"; }; };
-		5FF9EFF22D3322F900BCFBA9 /* libobjsee.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FAF157A2C7E4CA100E10412 /* libobjsee.framework */; platformFilter = ios; };
+		5FF9EFF22D3322F900BCFBA9 /* libobjsee.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FAF157A2C7E4CA100E10412 /* libobjsee.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -930,7 +930,6 @@
 		};
 		5FF9EFEC2D3321A000BCFBA9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			platformFilter = ios;
 			target = 5FAF15792C7E4CA100E10412 /* libobjsee */;
 			targetProxy = 5FF9EFEB2D3321A000BCFBA9 /* PBXContainerItemProxy */;
 		};
@@ -1360,10 +1359,11 @@
 		5FF9EFED2D3321A000BCFBA9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 44L979X757;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/dependencies/include/";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
@@ -1372,28 +1372,27 @@
 					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/dependencies/libs/",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-ljson-c-ios";
 				"OTHER_LDFLAGS[sdk=macosx*]" = "-ljson-c-mac";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ethanarbuckle.libobjseeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
+				REGISTER_APP_GROUPS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				XROS_DEPLOYMENT_TARGET = 2.2;
 			};
 			name = Debug;
 		};
 		5FF9EFEE2D3321A000BCFBA9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 44L979X757;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/dependencies/include/";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
@@ -1402,16 +1401,14 @@
 					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/dependencies/libs/",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ethanarbuckle.libobjseeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
+				REGISTER_APP_GROUPS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				XROS_DEPLOYMENT_TARGET = 2.2;
 			};
 			name = Release;
 		};

@@ -45,17 +45,17 @@
 }
 
 - (void)testSimpleStructs {
-    XCTAssertEqualObjects(@"CGPoint { double, double}", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{CGPoint=dd}")]);
-    XCTAssertEqualObjects(@"CGSize { double, double}", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{CGSize=dd}")]);
-    XCTAssertEqualObjects(@"struct { int, char}", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{?=ic}")]);
+    XCTAssertEqualObjects(@"CGPoint { double, double }", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{CGPoint=dd}")]);
+    XCTAssertEqualObjects(@"CGSize { double, double }", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{CGSize=dd}")]);
+    XCTAssertEqualObjects(@"struct { int, char }", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{?=ic}")]);
 }
 
 - (void)testComplexStructs {
-    XCTAssertEqualObjects(@"ComplexStruct { int, char *, double}", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{ComplexStruct=i*d}")]);
-    XCTAssertEqualObjects(@"OuterStruct { int, struct { double, double}, char}", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{OuterStruct=i{?=dd}c}")]);
-    XCTAssertEqualObjects(@"ConstStruct { const int, double}", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{ConstStruct=rid}")]);
-    XCTAssertEqualObjects(@"CGRect { CGPoint { double, double}, CGSize { double, double}}", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{CGRect={CGPoint=dd}{CGSize=dd}}")]);
-    XCTAssertEqualObjects(@"struct { long long, long long, double, long long, long long, long long, long long, long long, id, CGSize { double, double}, long long, long long, long long}", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{?=qqdqqqqq@{CGSize=dd}qqq}")]);
+    XCTAssertEqualObjects(@"ComplexStruct { int, char *, double }", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{ComplexStruct=i*d}")]);
+    XCTAssertEqualObjects(@"OuterStruct { int, struct { double, double }, char }", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{OuterStruct=i{?=dd}c}")]);
+    XCTAssertEqualObjects(@"ConstStruct { const int, double }", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{ConstStruct=rid}")]);
+    XCTAssertEqualObjects(@"CGRect { CGPoint { double, double }, CGSize { double, double } }", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{CGRect={CGPoint=dd}{CGSize=dd}}")]);
+    XCTAssertEqualObjects(@"struct { long long, long long, double, long long, long long, long long, long long, long long, id, CGSize { double, double }, long long, long long, long long }", [NSString stringWithUTF8String:get_struct_description_from_type_encoding("{?=qqdqqqqq@{CGSize=dd}qqq}")]);
 }
 
 - (void)testEdgeCases {
