@@ -116,12 +116,12 @@ int main(int argc, char *argv[]) {
         
         if (locate_objsee_library() != KERN_SUCCESS) {
             printf("Failed to find libobjsee\n");
-            return 1;
+            return EXIT_FAILURE;
         }
         
         if (parse_cli_arguments(argc, argv, &options, &config) < 0) {
             print_usage();
-            return 1;
+            return EXIT_FAILURE;
         }
         
         if (options.show_help) {
@@ -129,12 +129,12 @@ int main(int argc, char *argv[]) {
             if (options.show_version) {
                 print_version();
             }
-            return 0;
+            return EXIT_SUCCESS;
         }
         
         if (options.show_version) {
             print_version();
-            return 0;
+            return EXIT_SUCCESS;
         }
         
         if (options.tui_mode) {
@@ -156,15 +156,19 @@ int main(int argc, char *argv[]) {
             config.transport_config.port = 0;
             config.format.output_as_json = false;
         }
-
+        
         if (options.server_only) {
+            if (options.pid == 0) {
+                printf("Error: No PID specified for server mode\n");
+                return EXIT_FAILURE;
+            }
             return run_server(config, options);
         }
         
         NSString *bundleID = nil;
         if (options.file_path == NULL && (options.bundle_id == NULL || (bundleID = [NSString stringWithUTF8String:options.bundle_id]) == nil) && options.pid == 0) {
             printf("Error: No bundle ID or PID specified\n");
-            return 1;
+            return EXIT_FAILURE;
         }
         
         if (options.file_path) {
@@ -185,7 +189,7 @@ int main(int argc, char *argv[]) {
         if (options.file_path == NULL && options.pid != 0) {
             if (options.run_in_simulator) {
                 printf("Cannot attach to running process in simulator\n");
-                return 1;
+                return EXIT_FAILURE;
             }
             // If attaching to an existing pid:
             // 1. Inject the library dylib into the running process
@@ -193,20 +197,20 @@ int main(int argc, char *argv[]) {
             // 3. Call the entry point function with the encoded config string as an argument
             if (inject_dylib_into_pid(OBJSEE_LIBRARY_PATH, options.pid) != 0) {
                 printf("Failed to inject libobjsee into process\n");
-                return 1;
+                return EXIT_FAILURE;
             }
             
             // Find address of entry point
             uint64_t objsee_main_addr = get_function_address_in_pid("objsee_main", "libobjsee", options.pid);
             if (objsee_main_addr <= 0) {
                 printf("Failed to find objsee_main in process\n");
-                return 1;
+                return EXIT_FAILURE;
             }
             
             // Invoke entry point with the config
             if (call_remote_function_with_string(objsee_main_addr, (char *)[configString UTF8String], options.pid) != KERN_SUCCESS) {
                 printf("Failed to start objsee_main in process\n");
-                return 1;
+                return EXIT_FAILURE;
             }
             
             setup_exception_handler_on_process(options.pid);
@@ -217,7 +221,7 @@ int main(int argc, char *argv[]) {
             NSString *bootedSimulatorUUID = first_booted_simulator_uuid();
             if (!bootedSimulatorUUID) {
                 printf("No booted simulator found\n");
-                return 1;
+                return EXIT_FAILURE;
             }
             
 #if !TARGET_OS_IPHONE
@@ -225,7 +229,7 @@ int main(int argc, char *argv[]) {
 #endif
             if (launch_simulator_app_with_encoded_tracer_config(bootedSimulatorUUID, bundleID, configString) != KERN_SUCCESS) {
                 printf("Failed to launch app in simulator\n");
-                return 1;
+                return EXIT_FAILURE;
             }
         }
         else if (bundleID) {
@@ -246,14 +250,14 @@ int main(int argc, char *argv[]) {
             // Begin app launch -- config provided via env var
             if (launch_app_with_encoded_tracer_config(bundleID, configString) != KERN_SUCCESS) {
                 printf("Failed to launch app\n");
-                return 1;
+                return EXIT_FAILURE;
             }
             
             // Wait for the launch-listener to trigger or timeout
             dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
             if (options.pid <= 0) {
                 printf("Failed to launch app\n");
-                return 1;
+                return EXIT_FAILURE;
             }
         }
         
@@ -262,5 +266,5 @@ int main(int argc, char *argv[]) {
         return run_server(config, options);
     }
     
-    return 0;
+    return EXIT_SUCCESS;
 }
