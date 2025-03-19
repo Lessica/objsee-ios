@@ -20,6 +20,7 @@ typedef struct {
     bool show_version;
     bool no_color;
     bool run_in_simulator;
+    bool server_only;
     int argc;
     char **argv;
 } cli_options_t;

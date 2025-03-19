@@ -74,6 +74,11 @@ int parse_cli_arguments(int argc, char *argv[], cli_options_t *options, tracer_c
             options->run_in_simulator = true;
             continue;
         }
+
+        if (strcmp(argv[i], "--server") == 0) {
+            options->server_only = true;
+            continue;
+        }
         
         // arg verbosity: -A0, -A1, -A2, -A3
         if (argv[i][0] == '-' && argv[i][1] == 'A' && argv[i][2] >= '0' && argv[i][2] <= '3') {

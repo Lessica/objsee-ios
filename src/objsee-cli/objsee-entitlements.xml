@@ -13,7 +13,7 @@
     <key>com.apple.springboard.launchapplications</key>
     <true/>
     <key>com.apple.frontboard.launchapplications</key>
-    <string>YES</string>
+    <true/>
     <key>com.apple.private.MobileContainerManager.allowed</key>
     <true/>
     <key>com.apple.private.mobileinstall.allowedSPI</key>

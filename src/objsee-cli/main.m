@@ -46,6 +46,7 @@ static void print_usage(void) {
     printf("  -p <process hint>             Attach to an existing process\n");
     printf("  --nocolor                     Disable color output\n");
     printf("  --sim                         Run the app in iOS Simulator\n\n");
+    printf("  --server                      Run in server mode\n");
     printf("  -A0                           Include no arguments\n");
     printf("  -A1                           Include basic argument detail\n");
     printf("  -A2                           Include class names in argument detail\n");
@@ -91,6 +92,18 @@ static kern_return_t locate_objsee_library(void) {
     }
     
     return KERN_FAILURE;
+}
+
+static int run_server(tracer_config_t config, cli_options_t options) {
+    int status = 0;
+    if (options.tui_mode) {
+        status = run_tui_trace_server(&config);
+    }
+    else {
+        status = run_trace_server(&config, options.pid);
+    }
+    
+    return status;
 }
 
 int main(int argc, char *argv[]) {
@@ -143,6 +156,10 @@ int main(int argc, char *argv[]) {
             config.transport_config.port = 0;
             config.format.output_as_json = false;
         }
+
+        if (options.server_only) {
+            return run_server(config, options);
+        }
         
         NSString *bundleID = nil;
         if (options.file_path == NULL && (options.bundle_id == NULL || (bundleID = [NSString stringWithUTF8String:options.bundle_id]) == nil) && options.pid == 0) {
@@ -163,7 +180,8 @@ int main(int argc, char *argv[]) {
         }
         NSString *configString = [NSString stringWithUTF8String:b64_encoded_config];
         free(b64_encoded_config);
-        
+        NSLog(@"OBJSEE_CONFIG=%@", configString);
+
         if (options.file_path == NULL && options.pid != 0) {
             if (options.run_in_simulator) {
                 printf("Cannot attach to running process in simulator\n");
@@ -241,15 +259,7 @@ int main(int argc, char *argv[]) {
         
         // The target app is running (either spawned new or attached to existing), and the library is injected.
         // Connect to the transport socket and start listening for incoming trace events
-        int status = 0;
-        if (options.tui_mode) {
-            status = run_tui_trace_server(&config);
-        }
-        else {
-            status = run_trace_server(&config, options.pid);
-        }
-        
-        return status;
+        return run_server(config, options);
     }
     
     return 0;
