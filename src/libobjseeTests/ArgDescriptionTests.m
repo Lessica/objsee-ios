@@ -66,6 +66,14 @@
     XCTAssertTrue(strstr(outputBuffer, "3.14") != NULL);
 }
 
+- (void)testDoubleDescription {
+    double value = 3.14;
+    tracer_argument_t arg = { .type_encoding = "d", .address = &value };
+    
+    XCTAssertEqual(description_for_argument(&arg, TRACER_ARG_FORMAT_BASIC, outputBuffer, sizeof(outputBuffer)), KERN_SUCCESS);
+    XCTAssertTrue(strstr(outputBuffer, "3.14") != NULL);
+}
+
 - (void)testPointerDescription {
     int x = 42;
     void *ptr = &x;
@@ -83,7 +91,7 @@
     XCTAssertTrue(strstr(outputBuffer, "{0x") != NULL);
     
     XCTAssertEqual(description_for_argument(&arg, TRACER_ARG_FORMAT_DESCRIPTIVE, outputBuffer, sizeof(outputBuffer)), KERN_SUCCESS);
-    XCTAssertTrue(strstr(outputBuffer, "fooBarStruct { int, float}") != NULL);
+    XCTAssertTrue(strstr(outputBuffer, "fooBarStruct { int, float }") != NULL);
 }
 
 - (void)testBooleanDescription {

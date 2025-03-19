@@ -17,6 +17,7 @@ static kern_return_t _description_for_id(const tracer_argument_t *arg, tracer_ar
 static kern_return_t _description_for_selector(const tracer_argument_t *arg, tracer_argument_format_t fmt, char *out_buf, size_t buf_size);
 static kern_return_t _description_for_class(const tracer_argument_t *arg, tracer_argument_format_t fmt, char *out_buf, size_t buf_size);
 static kern_return_t _description_for_float(const tracer_argument_t *arg, tracer_argument_format_t fmt, char *out_buf, size_t buf_size);
+static kern_return_t _description_for_double(const tracer_argument_t *arg, tracer_argument_format_t fmt, char *out_buf, size_t buf_size);
 static kern_return_t _description_for_pointer(const tracer_argument_t *arg, tracer_argument_format_t fmt, char *out_buf, size_t buf_size);
 static kern_return_t _description_for_struct(const tracer_argument_t *arg, tracer_argument_format_t fmt, char *out_buf, size_t buf_size);
 static kern_return_t _description_for_bool(const tracer_argument_t *arg, tracer_argument_format_t fmt, char *out_buf, size_t buf_size);
@@ -46,9 +47,12 @@ kern_return_t description_for_argument(const tracer_argument_t *arg, tracer_argu
             return _description_for_class(arg, fmt, out_buf, buf_size);
         }
             
-        case 'f':
-        case 'd': {
+        case 'f': {
             return _description_for_float(arg, fmt, out_buf, buf_size);
+        }
+            
+        case 'd': {
+            return _description_for_double(arg, fmt, out_buf, buf_size);
         }
             
         case '^': {
@@ -320,6 +324,23 @@ static kern_return_t _description_for_float(const tracer_argument_t *arg, tracer
         return KERN_NO_SPACE;
     }
     
+    return KERN_SUCCESS;
+}
+
+static kern_return_t _description_for_double(const tracer_argument_t *arg, tracer_argument_format_t fmt, char *out_buf, size_t buf_size) {
+    if (arg == NULL || out_buf == NULL || buf_size == 0) {
+        return KERN_INVALID_ARGUMENT;
+    }
+
+    if (fmt == TRACER_ARG_FORMAT_NONE) {
+        out_buf[0] = '\0';
+        return KERN_SUCCESS;
+    }
+
+    if (snprintf(out_buf, buf_size, "%.2f", *(double *)arg->address) >= buf_size) {
+        return KERN_NO_SPACE;
+    }
+
     return KERN_SUCCESS;
 }
 
