@@ -10,7 +10,9 @@
 
 #include "tracer_types.h"
 
+#ifndef OBJSEE_LIB_VERSION
 #define OBJSEE_LIB_VERSION "0.0.1"
+#endif
 
 struct tracer_error_s {
     char message[256];

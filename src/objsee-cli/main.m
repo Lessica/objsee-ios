@@ -17,7 +17,13 @@
 #include "sim_launching.h"
 #include "tmpfs_overlay.h"
 
+#if THEOS_PACKAGE_SCHEME_ROOTHIDE
+#include <roothide.h>
+#endif
+
+#ifndef OBJSEE_CLI_VERSION
 #define OBJSEE_CLI_VERSION "0.0.1"
+#endif
 
 const char *OBJSEE_LIBRARY_PATH = "/var/jb/usr/lib/libobjsee.dylib";
 
@@ -48,12 +54,19 @@ static void print_usage(void) {
 }
 
 static kern_return_t locate_objsee_library(void) {
-    char *possible_paths[] = {
+#if THEOS_PACKAGE_SCHEME_ROOTHIDE
+    const char *roothide_path = jbroot("/usr/lib/libobjsee.dylib");
+#endif
+
+    const char *possible_paths[] = {
         // Prioritize /tmp/ over paths that are more likely to have sandbox restrictions
         "/tmp/libobjsee.dylib",
         "/var/jb/usr/lib/libobjsee.dylib",
         "/usr/lib/libobjsee.dylib",
         "/var/jb/tmp/libobjsee.dylib",
+#if THEOS_PACKAGE_SCHEME_ROOTHIDE
+        roothide_path,
+#endif
         NULL,
     };
     

@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-DEVICE_SSH_PORT = "2222"
-DEVICE_SSH_IP = "localhost"
+DEVICE_SSH_PORT = "58422"
+DEVICE_SSH_IP = "127.0.0.1"
 
 
 def determine_jb_root_prefix() -> Path:
