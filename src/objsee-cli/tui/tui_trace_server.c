@@ -314,8 +314,8 @@ static thread_view_t *get_or_create_thread_view(uint64_t thread_id, bool *did_cr
     
     tv->win = newwin(max_y - 2, width, 2, g_ui->thread_count  *(width + BORDER_WIDTH));
     if (tv->win == NULL) {
-        free(tv);
         free(tv->line_buffer);
+        free(tv);
         return NULL;
     }
     
@@ -336,8 +336,8 @@ static thread_view_t *get_or_create_thread_view(uint64_t thread_id, bool *did_cr
     
     tv->win = newwin(max_y - 2, width, 2, g_ui->thread_count * width);
     if (tv->win == NULL) {
-        free(tv);
         free(tv->line_buffer);
+        free(tv);
         printf("Failed to create window\n");
         return NULL;
     }
@@ -723,7 +723,7 @@ int run_tui_trace_server(tracer_config_t *config) {
                     memmove(buffer, line_start, buffer_pos);
                 }
             }
-            else if (bytes_read == 0 || (bytes_read < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
+            else if (bytes_read == 0 || (errno != EAGAIN && errno != EWOULDBLOCK)) {
                 time_t now = time(NULL);
                 char timestr[64];
                 strftime(timestr, sizeof(timestr), "%H:%M:%S", localtime(&now));

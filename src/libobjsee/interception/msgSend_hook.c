@@ -63,47 +63,48 @@ void free_event_arguments(tracer_event_t *event) {
         return;
     }
     
-    FREE_IF_NOT_NULL(event->method_signature);
+    if (event->method_signature) {
+        vm_deallocate(mach_task_self(), (vm_address_t)event->method_signature, strlen(event->method_signature) + 1);
+        event->method_signature = NULL;
+    }
+    
     if (event->arguments) {
         for (size_t i = 0; i < event->argument_count; i++) {
+            tracer_argument_t *arg = &event->arguments[i];
+            if (arg->type_encoding) {
+                vm_deallocate(mach_task_self(), (vm_address_t)arg->type_encoding, strlen(arg->type_encoding) + 1);
+                arg->type_encoding = NULL;
+            }
             
-            FREE_IF_NOT_NULL(event->arguments[i].type_encoding);
-            FREE_IF_NOT_NULL(event->arguments[i].objc_class_name);
-            FREE_IF_NOT_NULL(event->arguments[i].block_signature);
-            FREE_IF_NOT_NULL(event->arguments[i].description);
+            if (arg->objc_class_name) {
+                vm_deallocate(mach_task_self(), (vm_address_t)arg->objc_class_name, strlen(arg->objc_class_name) + 1);
+                arg->objc_class_name = NULL;
+            }
             
-            event->arguments[i].address = NULL;
-            event->arguments[i].size = 0;
-            event->arguments[i].objc_class = NULL;
+            if (arg->description) {
+                vm_deallocate(mach_task_self(), (vm_address_t)arg->description, strlen(arg->description) + 1);
+                arg->description = NULL;
+            }
+            
+            if (arg->block_signature) {
+                vm_deallocate(mach_task_self(), (vm_address_t)arg->block_signature, strlen(arg->block_signature) + 1);
+                arg->block_signature = NULL;
+            }
         }
-        FREE_IF_NOT_NULL(event->arguments);
+        
+        vm_deallocate(mach_task_self(), (vm_address_t)event->arguments, event->argument_count * sizeof(tracer_argument_t));
+        event->arguments = NULL;
     }
-    event->argument_count = 0;
-}
 
-static kern_return_t stack_make_local_copy(void *stack_ptr, vm_address_t *stack_copy, size_t stack_size) {
-    if (stack_ptr == NULL || stack_copy == NULL) {
-        return KERN_INVALID_ARGUMENT;
-    }
-    
-    vm_address_t copy = 0;
-    kern_return_t kr = vm_allocate(mach_task_self(), &copy, stack_size, VM_FLAGS_ANYWHERE);
-    if (kr != KERN_SUCCESS) {
-        return kr;
-    }
-    
-    kr = vm_write(mach_task_self(), copy, (vm_offset_t)stack_ptr, (mach_msg_type_number_t)stack_size);
-    if (kr != KERN_SUCCESS) {
-        return kr;
-    }
-    
-    kr = vm_protect(mach_task_self(), copy, stack_size, false, VM_PROT_READ | VM_PROT_WRITE);
-    if (kr != KERN_SUCCESS) {
-        return kr;
-    }
-    
-    *stack_copy = copy;
-    return KERN_SUCCESS;
+    event->argument_count = 0;
+    event->formatted_output = NULL;
+    event->class_name = NULL;
+    event->method_name = NULL;
+    event->image_path = NULL;
+    event->thread_id = 0;
+    event->trace_depth = 0;
+    event->real_depth = 0;
+    event->is_class_method = false;
 }
 
 __attribute__((aligned(16), always_inline, hot))
@@ -191,24 +192,25 @@ SEL pre_objc_msgSend_callback(__unsafe_unretained id self, SEL _cmd, uintptr_t l
         .method_signature = NULL,
     };
     
-    vm_address_t stack_copy = 0;
-    size_t stack_size = 1024 * 2;
+    char local_stack_copy_buffer[1024 * 2];
+    size_t stack_size_to_read = sizeof(local_stack_copy_buffer);
+    vm_size_t bytes_read = 0;
+
     bool capture_args = ctx->capture_arguments && ctx->stack_depth <= 32 && strstr(frame->selector_name, ":") != NULL;
     if (__builtin_expect(capture_args, 1)) {
-        if (stack_make_local_copy(stack_ptr, &stack_copy, stack_size) == KERN_SUCCESS) {
-            capture_arguments(g_tracer_ctx, frame, (void *)stack_copy, &event);
+        kern_return_t kr = vm_read_overwrite(mach_task_self(), (vm_address_t)stack_ptr, stack_size_to_read, (vm_address_t)local_stack_copy_buffer, &bytes_read);
+        if (kr == KERN_SUCCESS && bytes_read > 0) {
+            capture_arguments(g_tracer_ctx, frame, local_stack_copy_buffer, &event);
+        }
+        else {
+            printf("Failed to read arg stack: %s\n", mach_error_string(kr));
         }
     }
     
     tracer_handle_event(g_tracer_ctx, &event);
     
-//    if (__builtin_expect(event.arguments != NULL, 1)) {
-//         // TODO: events now uses vm_allocate, this needs to use vm_deallocate
-//         free_event_arguments(&event);
-//    }
-
-    if (stack_copy) {
-        vm_deallocate(mach_task_self(), stack_copy, stack_size);
+    if (__builtin_expect(event.arguments != NULL, 1)) {
+         free_event_arguments(&event);
     }
     
     ctx->trace_depth += 1;
@@ -219,10 +221,6 @@ __attribute__((aligned(16), always_inline, hot))
 uintptr_t post_objc_msgSend_callback(void) {
     struct tracer_thread_context_t *ctx = (struct tracer_thread_context_t *)pthread_getspecific(interception_stacktrace_thread_key);
     size_t current_depth = ctx->stack_depth;
-    if (current_depth < 0) {
-        tracer_set_error(g_tracer_ctx, "attempted to pop a record with index < 0. this is not expected.");
-        abort();
-    }
     
     ctx->stack_depth -= 1;
     if (ctx->trace_depth > 0) {
@@ -303,27 +301,7 @@ void *get_original_objc_msgSend(void) {
 }
 
 tracer_result_t init_message_interception(tracer_t *tracer) {
-    
-    // To combat unrealized classes during objc_msgSend argument capturing at process launch, before enabling interception
-    // run through all objc classes to ensure they're realized
-    unsigned int class_count = 0;
-    Class *classes = objc_copyClassList(&class_count);
-    if (classes == NULL) {
-        tracer_set_error(g_tracer_ctx, "init_message_interception: Failed to get class list");
-        return TRACER_ERROR_INITIALIZATION;
-    }
 
-    for (unsigned int i = 0; i < class_count; i++) {
-        Class cls = classes[i];
-        if (cls == NULL) {
-            continue;
-        }
-
-        class_isMetaClass(cls);
-        record_class_encounter(object_getClass((id)cls));
-    }
-    free(classes);
-    
     if (tracer == NULL) {
         tracer_set_error(g_tracer_ctx, "init_message_interception: Invalid tracer context");
         return TRACER_ERROR_INVALID_ARGUMENT;
@@ -341,34 +319,26 @@ tracer_result_t init_message_interception(tracer_t *tracer) {
         return TRACER_ERROR_MEMORY;
     }
     
-    void *_objc_msgSend = get_original_objc_msgSend();
-    if (_objc_msgSend == NULL) {
+    original_objc_msgSend = get_original_objc_msgSend();
+    if (original_objc_msgSend == NULL) {
         tracer_set_error(g_tracer_ctx, "Failed to locate objc_msgSend");
         return TRACER_ERROR_INITIALIZATION;
     }
 
 #if USE_JAILBREAK_HOOKER
-    void *jbhooker_handle = dlopen("/var/jb/usr/lib/libellekit.dylib", 0);
+    void *jbhooker_handle = dlopen("/var/jb/usr/lib/libsubstrate.dylib", 0);
     void *_MSHookFunction = dlsym(jbhooker_handle, "MSHookFunction");
     if (_MSHookFunction) {
-        ((void (*)(void *, void *, void **))_MSHookFunction)(_objc_msgSend, new_objc_msgSend, (void **)&original_objc_msgSend);
+        ((void (*)(void *, void *, void **))_MSHookFunction)(original_objc_msgSend, new_objc_msgSend, (void **)&original_objc_msgSend);
     }
 #else
-    {
-        original_objc_msgSend = _objc_msgSend;
-        if (original_objc_msgSend == NULL) {
-            tracer_set_error(g_tracer_ctx, "Failed to locate objc_msgSend");
-            return TRACER_ERROR_INITIALIZATION;
-        }
-        
-        struct symbol_rebinding_t *rebinding = hook_function("objc_msgSend", new_objc_msgSend);
-        if (rebinding == NULL) {
-            tracer_set_error(g_tracer_ctx, "Failed to hook objc_msgSend");
-            return TRACER_ERROR_INITIALIZATION;
-        }
-        
-        free(rebinding);
+    struct symbol_rebinding_t *rebinding = hook_function("objc_msgSend", new_objc_msgSend);
+    if (rebinding == NULL) {
+        tracer_set_error(g_tracer_ctx, "Failed to hook objc_msgSend");
+        return TRACER_ERROR_INITIALIZATION;
     }
+    
+    free(rebinding);
 #endif
     return TRACER_SUCCESS;
 }

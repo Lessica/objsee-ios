@@ -16,6 +16,7 @@
 #include "cli_args.h"
 #include "sim_launching.h"
 #include "tmpfs_overlay.h"
+#include "highlight.h"
 
 #if THEOS_PACKAGE_SCHEME_ROOTHIDE
 #include <roothide.h>
@@ -108,7 +109,9 @@ static int run_server(tracer_config_t config, cli_options_t options) {
 
 int main(int argc, char *argv[]) {
     dlopen("/System/Library/PrivateFrameworks/SpringBoardServices.framework/SpringBoardServices", 9);
-    
+
+    highlight_init(NULL);
+
     @autoreleasepool {
         __block cli_options_t options;
         tracer_config_t config = {0};
@@ -242,7 +245,7 @@ int main(int argc, char *argv[]) {
                 if (pid > 0) {
                     options.pid = pid;
                     printf("App launched with PID: %d\n", options.pid);
-                    setup_exception_handler_on_process(options.pid);
+                    
                 }
                 dispatch_semaphore_signal(sem);
             });
@@ -259,6 +262,7 @@ int main(int argc, char *argv[]) {
                 printf("Failed to launch app\n");
                 return EXIT_FAILURE;
             }
+            setup_exception_handler_on_process(options.pid);
         }
         
         // The target app is running (either spawned new or attached to existing), and the library is injected.
